@@ -4,6 +4,7 @@ import * as cors from 'cors';
 import * as mongoose from 'mongoose';
 import * as methodOverride from 'method-override';
 import { api } from './api/routes';
+import connect from "./connect";
 
 /**
  * MONGO DB INITIALIZATION
@@ -35,3 +36,6 @@ app.use('/api', api);
 const port = process.env.PORT || '8083';
 app.set('port', port);
 app.listen(port, () => console.log(`Server running on localhost:${port}`));
+
+const db = 'mongodb://localhost:27017/test';
+connect({db});
