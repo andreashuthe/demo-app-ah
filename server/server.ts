@@ -1,41 +1,54 @@
+import 'zone.js/dist/zone-node';
+
 import * as express from 'express';
-import * as bodyParser from 'body-parser';
-import * as cors from 'cors';
+import {join} from 'path';
 import * as mongoose from 'mongoose';
-import * as methodOverride from 'method-override';
-import { api } from './api/routes';
-import connect from "./connect";
+import * as bodyParser from 'body-parser';
+import { ArticleRoute } from './api/article-route';
 
-/**
- * MONGO DB INITIALIZATION
- */
-let connection = mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/contentgenerator", { useNewUrlParser: true }).then(
-    () => { console.info(`${new Date()} - Connected to MongoDB: ${process.env.MONGODB_URI}`); },
-    err => { console.error('MongoDB Connection Error. Please make sure that', process.env.MONGODB_URI, 'is running.'); }
-);
-
-/**
- * APP INITIALIZATION
- */
+const articleRoute: ArticleRoute = new ArticleRoute();
+// Express server
 const app = express();
+
+const PORT = process.env.PORT || 4000;
+const DIST_FOLDER = join(process.cwd(), 'dist/browser');
+
+// * NOTE :: leave this as require() since this file is built Dynamically from webpack
+const {AppServerModuleNgFactory, LAZY_MODULE_MAP, ngExpressEngine, provideModuleMap} = require('./dist/server/main');
+
+mongoose.connect('mongodb://localhost/demo-app-ah', { useNewUrlParser: true, useFindAndModify: false })
+    .then(() =>  console.log('connection successful'))
+    .catch((err) => console.error(err));
+
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(methodOverride('X-HTTP-Method-Override'));
-app.use(cors());
+// Our Universal express-engine (found @ https://github.com/angular/universal/tree/master/modules/express-engine)
+app.engine('html', ngExpressEngine({
+    bootstrap: AppServerModuleNgFactory,
+    providers: [
+        provideModuleMap(LAZY_MODULE_MAP)
+    ]
+}));
 
-/**
- * APP FILES
- */
-app.use('/api', api);
+app.set('view engine', 'html');
+app.set('views', DIST_FOLDER);
 
-/**
- * SERVER INITIALIZATION
- */
-const port = process.env.PORT || '8083';
-app.set('port', port);
-app.listen(port, () => console.log(`Server running on localhost:${port}`));
+// Example Express Rest API endpoints
+// app.get('/api/**', (req, res) => { });
+// Serve static files from /browser
+app.get('*.*', express.static(DIST_FOLDER, {
+    maxAge: '1y'
+}));
 
-const db = 'mongodb://localhost:27017/test';
-connect({db});
+articleRoute.articleRoute(app);
+
+// All regular routes use the Universal engine
+app.get('*', (req, res) => {
+    res.render('index', { req });
+});
+
+// Start up the Node server
+app.listen(PORT, () => {
+    console.log(`Node Express server listening on http://localhost:${PORT}`);
+});
