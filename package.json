@@ -2,18 +2,17 @@
   "name": "demo-app-ah",
   "version": "1.0.0",
   "description": "Simple demo",
-  "main": "dist/server.js",
   "scripts": {
     "ng": "ng",
+    "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "build-ts": "tsc",
-    "watch-node": "nodemon dist/server",
-    "watch-ts": "cd server && tsc -w",
-    "start": "node dist/server",
-    "postinstall": "ng build --prod --output-path dist && cd server && tsc"
+    "compile:server": "webpack --config webpack.server.config.js --progress --colors",
+    "serve:ssr": "node dist/server",
+    "build:ssr": "npm run build:client-and-server-bundles && npm run compile:server",
+    "build:client-and-server-bundles": "ng build --prod && ng run demo-app-ah:server:production --bundleDependencies all"
   },
   "engines": {
     "node": "10.16.0"
@@ -79,7 +78,10 @@
     "karma-jasmine-html-reporter": "^1.4.2",
     "nodemon": "^1.19.4",
     "protractor": "~5.4.2",
+    "ts-loader": "^6.2.1",
+    "ts-node": "~8.4.1",
     "tslint": "~5.20.0",
-    "typescript": "^3.5.3"
+    "typescript": "^3.5.3",
+    "webpack-cli": "^3.3.9"
   }
 }
